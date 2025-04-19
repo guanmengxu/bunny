@@ -32,5 +32,5 @@ fi
 # Cleanup
 rm -f "$tmpfile"
 rm -f "$0"
-#gpgconf --reload gpg-agent
-#gpgconf --kill gpg-agent
+gpgconf --reload gpg-agent
+gpgconf --kill gpg-agent
