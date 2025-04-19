@@ -15,7 +15,7 @@ curl -sSL "$url" -o "$tmpfile" || {
 }
 
 echo "[*] Decrypting script (enter password when prompted)..."
-if gpg -o "$outfile" -d "$tmpfile"; then
+if gpg --no-tty --pinentry-mode loopback -o "$outfile" -d "$tmpfile"; then
   chmod +x "$outfile"
   echo "[+] Decryption successful: $outfile"
   echo "[>] Run it manually: bash $outfile"
@@ -27,3 +27,5 @@ fi
 
 rm -f "$tmpfile"
 rm -f "$0"
+#gpgconf --reload gpg-agent
+#gpgconf --kill gpg-agent
