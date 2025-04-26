@@ -9,6 +9,11 @@ fi
 
 BASE_NAME="$1"
 OUTPUT_PATH="${2:-./${BASE_NAME}.sh}"
+# if the user passed a directory, append the filename
+if [ -n "${2-}" ] && [ -d "$OUTPUT_PATH" ]; then
+  OUTPUT_PATH="${OUTPUT_PATH%/}/${BASE_NAME}.sh"
+fi
+
 URL="https://raw.githubusercontent.com/guanmengxu/bunny/main/${BASE_NAME}.gpg"
 TEMP_FILE="$(mktemp -t ${BASE_NAME}_XXXXXX.gpg)"
 
