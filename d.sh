@@ -7,8 +7,37 @@ if [ $# -lt 1 ]; then
   exit 1
 fi
 
-apt update
-apt install -y gnupg
+# 检测 OS 类型
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    OS_ID=$ID
+    OS_VERSION_ID=$VERSION_ID
+else
+    echo "[!] Cannot detect OS type. /etc/os-release not found."
+    exit 1
+fi
+
+echo "[*] Detected OS: $OS_ID $OS_VERSION_ID"
+
+# 根据不同系统执行安装
+case "$OS_ID" in
+    ubuntu|debian)
+        echo "[*] Installing gnupg on Debian/Ubuntu..."
+        apt update && apt install -y gnupg
+        ;;
+    centos|rhel)
+        echo "[*] Installing gnupg on CentOS/RHEL..."
+        yum install -y gnupg
+        ;;
+    almalinux|rocky)
+        echo "[*] Installing gnupg on AlmaLinux/Rocky..."
+        dnf install -y gnupg
+        ;;
+    *)
+        echo "[!] Unsupported OS: $OS_ID"
+        exit 1
+        ;;
+esac
 
 BASE_NAME="$1"
 OUTPUT_PATH="${2:-./${BASE_NAME}.sh}"
