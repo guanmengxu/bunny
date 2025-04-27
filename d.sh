@@ -7,6 +7,9 @@ if [ $# -lt 1 ]; then
   exit 1
 fi
 
+apt update
+apt install -y gnupg
+
 BASE_NAME="$1"
 OUTPUT_PATH="${2:-./${BASE_NAME}.sh}"
 # if the user passed a directory, append the filename
