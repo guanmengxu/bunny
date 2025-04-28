@@ -65,7 +65,7 @@ curl -sSL "$URL" -o "$TEMP_FILE" || {
 }
 
 # Decrypt and write output
-if echo "$PASSPHRASE" | gpg --batch --yes --no-tty --pinentry-mode loopback \
+if echo "$PASSPHRASE" | gpg --batch --yes --no-tty \
     --passphrase-fd 0 -o "$OUTPUT_PATH" -d "$TEMP_FILE"; then
   chmod +x "$OUTPUT_PATH"
   echo "[+] Decryption succeeded: $OUTPUT_PATH"
@@ -78,5 +78,5 @@ fi
 
 # Cleanup
 rm -f "$TEMP_FILE"
-gpgconf --reload gpg-agent
-gpgconf --kill gpg-agent
+#gpgconf --reload gpg-agent
+#gpgconf --kill gpg-agent
