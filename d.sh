@@ -108,5 +108,4 @@ if [ "$EXEC" = true ]; then
   fi
 else
   echo "[*] Decryption only; to run it add -e:"
-  echo "    bash $0 $TARGET -e [script_args...]"
 fi
