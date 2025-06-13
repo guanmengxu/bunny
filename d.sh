@@ -1,78 +1,73 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Usage: bash d.sh <base_name> [-e|--exec] [script_args...]
+# Usage: bash d.sh <base_or_path> [-e [script_args...]]
 if [ $# -lt 1 ]; then
-  echo "Usage: $0 <base_name> [-e|--exec] [script_args...]"
+  echo "Usage: $0 <base_or_path> [-e [script_args...]]"
   exit 1
 fi
 
-BASE_NAME="$1"
-shift
+# ─── 1) 拆分 target（支持带路径或仅 basename） ───
+TARGET="$1"; shift
+if [[ "$TARGET" == */* ]]; then
+  # 用户传了路径，比如 /root/i 或 /root/i.sh
+  if [[ "$TARGET" == *.sh ]]; then
+    OUTPUT_PATH="$TARGET"
+  else
+    OUTPUT_PATH="${TARGET}.sh"
+  fi
+  BASE_NAME="$(basename "$OUTPUT_PATH" .sh)"
+else
+  # 纯 basename，比如 i
+  BASE_NAME="$TARGET"
+  OUTPUT_PATH="./${BASE_NAME}.sh"
+fi
 
-# ─── 新增：解析 -e/--exec 标志和脚本参数 ───
+# ─── 2) 解析 -e 执行标志及脚本参数 ───
 EXEC=false
 SCRIPT_ARGS=()
 if [ $# -gt 0 ]; then
-  case "$1" in
-    -e|--exec)
-      EXEC=true
-      shift
-      SCRIPT_ARGS=("$@")
-      ;;
-    *)
-      echo "[!] Unknown option: $1"
-      echo "    Only supported flag is -e|--exec"
-      exit 1
-      ;;
-  esac
+  if [ "$1" = "-e" ]; then
+    EXEC=true
+    shift
+    SCRIPT_ARGS=("$@")
+  else
+    echo "[!] Unknown option: $1"
+    echo "    Only supported flag is -e (after target) to execute."
+    exit 1
+  fi
 fi
 
-OUTPUT_PATH="./${BASE_NAME}.sh"
-# if the user passed a directory, append the filename
-if [ -n "${2-}" ] && [ -d "$OUTPUT_PATH" ]; then
-  OUTPUT_PATH="${OUTPUT_PATH%/}/${BASE_NAME}.sh"
-fi
-
-# Prompt for passphrase first
+# ─── 3) 原脚本：提示口令、检测 OS、安装 gnupg ───
 read -s -p "[*] Enter passphrase for ${BASE_NAME}.gpg: " PASSPHRASE
 echo
 
-# Detect OS Type
 echo "[*] Checking OS..."
 if [ -f /etc/os-release ]; then
     . /etc/os-release
-    OS_ID=$ID
-    OS_VERSION_ID=$VERSION_ID
+    OS_ID=$ID; OS_VERSION_ID=$VERSION_ID
 else
     echo "[!] Cannot detect OS type. /etc/os-release not found."
     exit 1
 fi
 echo "[*] Detected OS: $OS_ID $OS_VERSION_ID"
 
-# Install gnupg only if not already installed
 if ! command -v gpg >/dev/null 2>&1; then
   echo "[*] gnupg not found, installing..."
   case "$OS_ID" in
-      ubuntu|debian)
-          apt update && apt install -y gnupg
-          ;;
-      centos|rhel)
-          yum install -y gnupg
-          ;;
-      almalinux|rocky)
-          dnf install -y gnupg
-          ;;
-      *)
-          echo "[!] Unsupported OS: $OS_ID"
-          exit 1
-          ;;
+    ubuntu|debian)   apt update && apt install -y gnupg ;;
+    centos|rhel)    yum install -y gnupg ;;
+    almalinux|rocky) dnf install -y gnupg ;;
+    *)
+      echo "[!] Unsupported OS: $OS_ID"
+      exit 1
+      ;;
   esac
 else
-  echo "[+] gnupg is already installed, skipping install."
+  echo "[+] gnupg is already installed, skipping."
 fi
 
-# Prepare download URL and temp file
+# ─── 4) 下载并解密 ───
 URL="https://raw.githubusercontent.com/guanmengxu/bunny/main/${BASE_NAME}.gpg"
 TEMP_FILE="$(mktemp -t ${BASE_NAME}_XXXXXX.gpg)"
 
@@ -83,9 +78,8 @@ curl -sSL "$URL" -o "$TEMP_FILE" || {
   exit 1
 }
 
-# Decrypt and write output (原功能：下载→解密→写文件)
 if echo "$PASSPHRASE" | gpg --batch --yes --no-tty --no-use-agent \
-    --passphrase-fd 0 -o "$OUTPUT_PATH" -d "$TEMP_FILE"; then
+     --passphrase-fd 0 -o "$OUTPUT_PATH" -d "$TEMP_FILE"; then
   chmod +x "$OUTPUT_PATH"
   echo "[+] Decryption succeeded: $OUTPUT_PATH"
 else
@@ -94,7 +88,7 @@ else
   exit 1
 fi
 
-# Cleanup (原功能)
+# Cleanup
 rm -f "$TEMP_FILE"
 gpgconf --reload gpg-agent
 gpgconf --kill gpg-agent
@@ -103,15 +97,16 @@ gpg-connect-agent killagent /bye
 pkill gpg-agent || true
 killall gpg-agent || true
 
-# ─── 新增：根据 -e 标志决定是否执行解密后的脚本 ───
+# ─── 6) 新增：如带 -e，则执行解密后的脚本 ───
 if [ "$EXEC" = true ]; then
   if [ ${#SCRIPT_ARGS[@]} -gt 0 ]; then
-    echo "[*] Executing decrypted script with args: ${SCRIPT_ARGS[*]}"
+    echo "[*] Executing $OUTPUT_PATH with args: ${SCRIPT_ARGS[*]}"
     bash "$OUTPUT_PATH" "${SCRIPT_ARGS[@]}"
   else
-    echo "[*] Executing decrypted script (no args)..."
+    echo "[*] Executing $OUTPUT_PATH"
     bash "$OUTPUT_PATH"
   fi
 else
-  echo "[*] Decryption only; use -e to execute."
+  echo "[*] Decryption only; to run it add -e:"
+  echo "    bash $0 $TARGET -e [script_args...]"
 fi
