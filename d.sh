@@ -92,8 +92,8 @@ fi
 rm -f "$TEMP_FILE"
 gpgconf --reload gpg-agent || true
 gpgconf --kill gpg-agent || true
-gpg-connect-agent reloadagent /bye
-gpg-connect-agent killagent /bye
+gpg-connect-agent reloadagent /bye || true
+gpg-connect-agent killagent /bye || true
 pkill gpg-agent || true
 killall gpg-agent || true
 
