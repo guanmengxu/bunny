@@ -90,8 +90,8 @@ fi
 
 # Cleanup
 rm -f "$TEMP_FILE"
-gpgconf --reload gpg-agent
-gpgconf --kill gpg-agent
+gpgconf --reload gpg-agent || true
+gpgconf --kill gpg-agent || true
 gpg-connect-agent reloadagent /bye
 gpg-connect-agent killagent /bye
 pkill gpg-agent || true
