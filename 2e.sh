@@ -120,8 +120,6 @@ chmod +x 2e.sh
 DROP_IN_DIR="/etc/systemd/system/cloud-final.service.d"
 if [ ! -d "$DROP_IN_DIR" ]; then
     mkdir -p "$DROP_IN_DIR"
-else
-    echo "Directory already exists: $DROP_IN_DIR"
 fi
 
 DROP_IN_FILE="$DROP_IN_DIR/override.conf"
@@ -133,13 +131,6 @@ if [ -f /root/2e.sh ]; then
     exec_start_post+="ExecStartPost=/root/2e.sh"$'\n'
 else
     echo "/root/2e.sh not found, please check path or create the script."
-fi
-
-if [ -f /root/2.sh ]; then
-    chmod +x /root/2.sh > /dev/null 2>&1
-    exec_start_post+="ExecStartPost=/root/2.sh"$'\n'
-else
-    echo "/root/2.sh not found, please check path or create the script."
 fi
 
 cat <<EOL > "$DROP_IN_FILE"
