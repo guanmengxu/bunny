@@ -46,7 +46,7 @@ while true; do
 done
 echo ")" >> $CONFIG_FILE
 
-mapfile -t local_ips < <(hostname -I | tr ' ' '\n' | grep '^172\.17\.')
+mapfile -t local_ips < <(hostname -I | tr ' ' '\n' | grep -E '^172\.(17|28)\.')
 ip=${local_ips[0]}
 
 NEW_SRC=""
